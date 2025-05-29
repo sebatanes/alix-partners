@@ -2,12 +2,18 @@
 import { ref, onMounted } from 'vue';
 import AppHeader from './components/AppHeader.vue'
 import AppFooter from './components/AppFooter.vue'
+
+
+
 </script>
 
 <template>
   <div class="app-container">
     <AppHeader />
     <main class="container">
+      <nav>
+      </nav>
+      <router-view />
     </main>
     <AppFooter />
   </div>
@@ -23,5 +29,20 @@ import AppFooter from './components/AppFooter.vue'
 main {
   flex: 1;
   padding: 24px 0;
+}
+
+nav {
+  padding: 30px;
+}
+
+nav a {
+  font-weight: bold;
+  color: #2c3e50;
+  text-decoration: none;
+  margin: 0 10px;
+}
+
+nav a.router-link-exact-active {
+  color: #42b983;
 }
 </style>

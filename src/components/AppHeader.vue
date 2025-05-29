@@ -1,4 +1,5 @@
 <script setup>
+import { RouterLink } from 'vue-router';
 </script>
 
 <template>
@@ -6,17 +7,12 @@
     <div class="container">
       <div class="header-content">
         <div class="logo">
-          <img
-            src="/alixpartners-logo-black.webp"
-            alt="AlixPartners Logo"
-            class="alix-logo"
-          />
+          <img src="/alixpartners-logo-black.webp" alt="AlixPartners Logo" class="alix-logo" />
         </div>
 
         <nav class="nav-menu">
-          <a href="#">Products</a>
-          <a href="#">Users</a>
-          <a href="#">Something</a>
+          <router-link class="link" to="/">Home</router-link>
+          <router-link class="link" to="/about">About</router-link>
         </nav>
       </div>
     </div>
@@ -24,6 +20,10 @@
 </template>
 
 <style scoped>
+.link {
+  margin: 0px;
+}
+
 .app-header {
   background-color: white;
   padding: 16px 0;
@@ -66,6 +66,6 @@
 }
 
 .nav-menu a:hover {
-  color: #1D8837; 
+  color: #1D8837;
 }
 </style>
