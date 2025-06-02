@@ -9,10 +9,9 @@ import { RouterLink } from 'vue-router';
         <div class="logo">
           <img src="/alixpartners-logo-black.webp" alt="AlixPartners Logo" class="alix-logo" />
         </div>
-
         <nav class="nav-menu">
-          <router-link class="link" to="/">Home</router-link>
-          <router-link class="link" to="/about">About</router-link>
+          <router-link class="link" to="/userlist">Home</router-link>
+          <router-link class="link" to="/userdetail">Detail</router-link>
         </nav>
       </div>
     </div>

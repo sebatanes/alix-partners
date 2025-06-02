@@ -1,9 +1,7 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, provide } from 'vue';
 import AppHeader from './components/AppHeader.vue'
 import AppFooter from './components/AppFooter.vue'
-
-
 
 </script>
 
@@ -28,11 +26,12 @@ import AppFooter from './components/AppFooter.vue'
 
 main {
   flex: 1;
-  padding: 24px 0;
+  display: flex;
+  flex-direction: column;
 }
 
-nav {
-  padding: 30px;
+router-view {
+  flex: 1;
 }
 
 nav a {
