@@ -7,11 +7,6 @@ const router = createRouter({
     {
       path: "/",
       name: "home",
-      redirect: "/users"
-    },
-    {
-      path: "/users",
-      name: "users",
       component: UserListView
     }
   ],
