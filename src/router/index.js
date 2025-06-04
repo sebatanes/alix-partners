@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from "vue-router";
+import UserListView from "../views/UserListView.vue";
 
 const router = createRouter({
   history: createWebHistory(),
@@ -6,6 +7,12 @@ const router = createRouter({
     {
       path: "/",
       name: "home",
+      redirect: "/users"
+    },
+    {
+      path: "/users",
+      name: "users",
+      component: UserListView
     }
   ],
 });
