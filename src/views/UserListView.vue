@@ -1,26 +1,27 @@
 <template>
   <div class="org-chart-container">
     <!-- 
-      Acá aplicamos el principio del libro: dejamos que Vue maneje el DOM
+      Acá aplico el principio del libro ( D3 in Action, Third Edition de O'reilly): dejo
+       que Vue maneje el DOM
       En lugar de que D3 genere y manipule elementos DOM, Vue se encarga del template
       Esto es mucho más performante porque evitamos las manipulaciones DOM constantes
+
+      
     -->
     <div class="controls">
       <button @click="toggleExpandAll" class="control-button">
-        {{ expandAll ? 'Collapse All' : 'Expand All' }}
+        {{ expandAll ? "Collapse All" : "Expand All" }}
       </button>
-      <button @click="resetZoom" class="control-button">
-        Reset Zoom
-      </button>
+      <button @click="resetZoom" class="control-button">Reset Zoom</button>
     </div>
-    
+
     <!-- 
       CLAVE: Usamos Canvas en lugar de SVG como recomienda el libro
       Canvas es mucho más performante para visualizaciones complejas
       porque renderiza directo al bitmap en lugar de mantener objetos DOM
     -->
-    <canvas 
-      ref="canvasRef" 
+    <canvas
+      ref="canvasRef"
       class="chart-canvas"
       @wheel="handleWheel"
       @mousedown="handleMouseDown"
@@ -28,13 +29,13 @@
       @mouseup="handleMouseUp"
       @click="handleClick"
     ></canvas>
-    
+
     <!-- 
       Tooltip manejado por Vue, no por D3
       Seguimos el patrón híbrido: Vue controla DOM, D3 solo calcula datos
     -->
-    <div 
-      v-if="tooltip.visible" 
+    <div
+      v-if="tooltip.visible"
       class="tooltip"
       :style="{ left: tooltip.x + 'px', top: tooltip.y + 'px' }"
     >
@@ -52,12 +53,20 @@
           <div class="headcount-row">
             <span class="headcount-label">Team:</span>
             <span class="headcount-values">
-              <span class="active">{{ tooltip.data.headcount.active }} active</span>
-              <span v-if="tooltip.data.headcount.inactive > 0" class="inactive">{{ tooltip.data.headcount.inactive }} inactive</span>
-              <span v-if="tooltip.data.headcount.open > 0" class="open">{{ tooltip.data.headcount.open }} open</span>
+              <span class="active"
+                >{{ tooltip.data.headcount.active }} active</span
+              >
+              <span v-if="tooltip.data.headcount.inactive > 0" class="inactive"
+                >{{ tooltip.data.headcount.inactive }} inactive</span
+              >
+              <span v-if="tooltip.data.headcount.open > 0" class="open"
+                >{{ tooltip.data.headcount.open }} open</span
+              >
             </span>
           </div>
-          <div class="headcount-total">Total: {{ tooltip.data.headcount.total }}</div>
+          <div class="headcount-total">
+            Total: {{ tooltip.data.headcount.total }}
+          </div>
         </div>
         <div class="tooltip-level">Level {{ tooltip.data.level }}</div>
       </div>
@@ -66,9 +75,9 @@
 </template>
 
 <script setup>
-import { onMounted, onUnmounted, ref, nextTick } from 'vue';
-import * as d3 from 'd3';
-import { generateOrganizationalChart } from '../services/userService';
+import { onMounted, onUnmounted, ref, nextTick } from "vue";
+import * as d3 from "d3";
+import { generateOrganizationalChart } from "../services/userService";
 
 // Variables reactivas de Vue - el framework maneja el estado, no D3
 const canvasRef = ref(null);
@@ -77,7 +86,7 @@ const tooltip = ref({
   visible: false,
   x: 0,
   y: 0,
-  data: {}
+  data: {},
 });
 
 // Variables globales para el canvas y contexto de renderizado
@@ -89,25 +98,22 @@ let lastMousePos = { x: 0, y: 0 };
 let animationId = null;
 let resizeObserver = null;
 
-// OPTIMIZACIÓN CLAVE: Configuración centralizada para evitar recálculos
 const ANIMATION_DURATION = 300;
-const NODE_CACHE = new Map(); // Cache para evitar recrear nodos
-const RENDER_THROTTLE_MS = 16; // Throttling para smooth 60fps
 
 // Paleta de colores predefinida - evita generar colores dinámicamente
 const BRANCH_COLORS = [
-  '#e74c3c', // rojo
-  '#f39c12', // naranja
-  '#f1c40f', // amarillo
-  '#2ecc71', // verde
-  '#1abc9c', // turquesa
-  '#3498db', // azul
-  '#9b59b6', // violeta
-  '#e67e22', // naranja oscuro
-  '#16a085', // verde azulado
-  '#34495e', // azul oscuro
-  '#fd79a8', // rosa
-  '#00b894', // verde lima
+  "#e74c3c", // rojo
+  "#f39c12", // naranja
+  "#f1c40f", // amarillo
+  "#2ecc71", // verde
+  "#1abc9c", // turquesa
+  "#3498db", // azul
+  "#9b59b6", // violeta
+  "#e67e22", // naranja oscuro
+  "#16a085", // verde azulado
+  "#34495e", // azul oscuro
+  "#fd79a8", // rosa
+  "#00b894", // verde lima
 ];
 
 // OPTIMIZACIÓN: Configuración estática evita recálculos en cada render
@@ -122,32 +128,33 @@ const CHART_CONFIG = {
   fontSize: 9,
   smallFontSize: 7,
   colors: {
-    background: '#333',
-    cardFill: '#333',
-    cardStroke: '#1D8837',
-    textFill: '#FFF',
-    linkStroke: '#333',
-    hoverFill: '#333',
+    background: "#333",
+    cardFill: "#333",
+    cardStroke: "#1D8837",
+    textFill: "#FFF",
+    linkStroke: "#333",
+    hoverFill: "#333",
     // Paleta jerárquica precalculada
     hierarchyColors: [
-      '#1D8837', // Nivel 0 (CEO)
-      '#2E7D32', // Nivel 1
-      '#388E3C', // Nivel 2
-      '#43A047', // Nivel 3
-      '#4CAF50', // Nivel 4
-      '#66BB6A', // Nivel 5
-      '#81C784', // Nivel 6
-      '#A5D6A7', // Nivel 7
-      '#C8E6C9', // Nivel 8
-      '#E8F5E9'  // Nivel 9
-    ]
-  }
+      "#1D8837", // Nivel 0 (CEO)
+      "#2E7D32", // Nivel 1
+      "#388E3C", // Nivel 2
+      "#43A047", // Nivel 3
+      "#4CAF50", // Nivel 4
+      "#66BB6A", // Nivel 5
+      "#81C784", // Nivel 6
+      "#A5D6A7", // Nivel 7
+      "#C8E6C9", // Nivel 8
+      "#E8F5E9", // Nivel 9
+    ],
+  },
 };
 
 /**
  * Construye la jerarquía usando D3 SOLO como utilidad de cálculo
  * No manipula DOM - solo genera estructura de datos
  * Esto es clave para la performance: D3 solo calcula, Vue renderiza
+ * (tambien sacado de D3 in Action, Third Edition de O'reilly)
  */
 function buildHierarchy() {
   const orgChart = generateOrganizationalChart();
@@ -163,12 +170,17 @@ function buildHierarchy() {
   }
 
   // Pre-procesamos todos los nodos para evitar cálculos posteriores
-  root.each(node => {
+  root.each((node) => {
     if (!node.data.id) {
-      node.data.id = `node_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      node.data.id = `node_${Date.now()}_${Math.random()
+        .toString(36)
+        .substr(2, 9)}`;
     }
-    node.data.department = node.children ? node.data.name : 
-                          (node.parent ? node.parent.data.name : node.data.name);
+    node.data.department = node.children
+      ? node.data.name
+      : node.parent
+      ? node.parent.data.name
+      : node.data.name;
     // Inicializamos posiciones para animaciones suaves
     node.x0 = node.x || 0;
     node.y0 = node.y || 0;
@@ -183,10 +195,10 @@ function buildHierarchy() {
 function assignBranchColor(node, color) {
   node.data.branchColor = color;
   if (node.children) {
-    node.children.forEach(child => assignBranchColor(child, color));
+    node.children.forEach((child) => assignBranchColor(child, color));
   }
   if (node._children) {
-    node._children.forEach(child => assignBranchColor(child, color));
+    node._children.forEach((child) => assignBranchColor(child, color));
   }
 }
 
@@ -210,27 +222,20 @@ function expand(d) {
   }
 }
 
-/**
- * Toggle masivo optimizado - una sola actualización del chart
- */
 function toggleAllNodes(expandFlag) {
   if (expandFlag) {
-    rootGlobal.each(d => expand(d));
+    rootGlobal.each((d) => expand(d));
   } else {
     rootGlobal.children?.forEach(collapse);
   }
   updateChart(rootGlobal, true);
 }
 
-/**
- * Cálculo de posición radial optimizado
- * Factor de dispersión dinámico según profundidad
- */
 function radialPoint(x, y, depth = 0) {
-  const spreadFactor = 1 + (depth * 0.2);
+  const spreadFactor = 1 + depth * 0.2;
   return [
-    y * Math.cos(x - Math.PI / 2) * spreadFactor, 
-    y * Math.sin(x - Math.PI / 2) * spreadFactor
+    y * Math.cos(x - Math.PI / 2) * spreadFactor,
+    y * Math.sin(x - Math.PI / 2) * spreadFactor,
   ];
 }
 
@@ -241,7 +246,7 @@ function radialPoint(x, y, depth = 0) {
 function clearCanvas() {
   const { width, height } = canvas;
   ctx.clearRect(0, 0, width, height);
-  
+
   // Setup del contexto una sola vez por frame
   ctx.save();
   ctx.translate(width / 2 + transform.x, height / 2 + transform.y);
@@ -255,15 +260,16 @@ function clearCanvas() {
 function renderLinks(links) {
   ctx.strokeStyle = CHART_CONFIG.colors.linkStroke;
   ctx.lineWidth = CHART_CONFIG.strokeWidth;
-  ctx.lineCap = 'round';
+  ctx.lineCap = "round";
 
   // D3 solo para generar path data, no manipula DOM
-  const linkGenerator = d3.linkRadial()
-    .angle(d => d.x)
-    .radius(d => d.y * (1 + (d.depth * 0.2)));
+  const linkGenerator = d3
+    .linkRadial()
+    .angle((d) => d.x)
+    .radius((d) => d.y * (1 + d.depth * 0.2));
 
   // Batch rendering para mejor performance
-  links.forEach(link => {
+  links.forEach((link) => {
     const pathData = linkGenerator(link);
     const path = new Path2D(pathData);
     ctx.stroke(path);
@@ -278,7 +284,7 @@ function renderLinks(links) {
 function renderNode(node, isHovered = false) {
   const [x, y] = radialPoint(node.x, node.y, node.depth);
   const { cardWidth, cardHeight, cardRadius } = CHART_CONFIG;
-  
+
   // Una sola transformación por nodo
   ctx.save();
   ctx.translate(x, y);
@@ -286,16 +292,20 @@ function renderNode(node, isHovered = false) {
   // Path2D para formas complejas - mucho más rápido
   const cardPath = new Path2D();
   cardPath.roundRect(
-    -cardWidth / 2, 
-    -cardHeight / 2, 
-    cardWidth, 
-    cardHeight, 
+    -cardWidth / 2,
+    -cardHeight / 2,
+    cardWidth,
+    cardHeight,
     cardRadius
   );
 
   // Color precalculado según rama y profundidad
-  let fillColor = node.data.branchColor || CHART_CONFIG.colors.hierarchyColors[Math.min(node.depth, CHART_CONFIG.colors.hierarchyColors.length - 1)];
-  
+  let fillColor =
+    node.data.branchColor ||
+    CHART_CONFIG.colors.hierarchyColors[
+      Math.min(node.depth, CHART_CONFIG.colors.hierarchyColors.length - 1)
+    ];
+
   // Variación de luminosidad cacheable
   if (!isHovered && node.depth > 1 && node.data.branchColor) {
     fillColor = shadeColor(node.data.branchColor, node.depth * 8);
@@ -311,66 +321,70 @@ function renderNode(node, isHovered = false) {
   ctx.stroke(cardPath);
 
   // Shadow una sola vez
-  ctx.shadowColor = 'rgba(0, 0, 0, 0.2)';
+  ctx.shadowColor = "rgba(0, 0, 0, 0.2)";
   ctx.shadowBlur = 4;
   ctx.shadowOffsetX = 0;
   ctx.shadowOffsetY = 2;
 
   // Cálculo de luminancia para contraste de texto
-  const luminance = (0.299 * parseInt(fillColor.slice(1,3), 16) + 
-                    0.587 * parseInt(fillColor.slice(3,5), 16) + 
-                    0.114 * parseInt(fillColor.slice(5,7), 16)) / 255;
-  
-  const textColor = luminance > 0.5 ? '#000000' : '#FFFFFF';
-  
+  const luminance =
+    (0.299 * parseInt(fillColor.slice(1, 3), 16) +
+      0.587 * parseInt(fillColor.slice(3, 5), 16) +
+      0.114 * parseInt(fillColor.slice(5, 7), 16)) /
+    255;
+
+  const textColor = luminance > 0.5 ? "#000000" : "#FFFFFF";
+
   // Renderizado de texto optimizado - truncado inteligente
   ctx.fillStyle = textColor;
   ctx.font = `bold ${CHART_CONFIG.fontSize}px sans-serif`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+
   // Truncado eficiente usando binary search
   let name = node.data.name;
   const nameMaxWidth = cardWidth - 16;
   const nameTextWidth = ctx.measureText(name).width;
   if (nameTextWidth > nameMaxWidth) {
-    let start = 0, end = name.length;
+    let start = 0,
+      end = name.length;
     while (start < end) {
       const mid = Math.floor((start + end) / 2);
-      const truncated = name.slice(0, mid) + '...';
+      const truncated = name.slice(0, mid) + "...";
       if (ctx.measureText(truncated).width <= nameMaxWidth) {
         start = mid + 1;
       } else {
         end = mid;
       }
     }
-    name = name.slice(0, start - 1) + '...';
+    name = name.slice(0, start - 1) + "...";
   }
-  
+
   ctx.fillText(name, 0, -8);
-  
+
   // Texto de posición con mismo patrón optimizado
   ctx.font = `${CHART_CONFIG.smallFontSize}px sans-serif`;
   ctx.fillStyle = textColor;
-  let position = node.data.position || 'Employee';
+  let position = node.data.position || "Employee";
   const posMaxWidth = cardWidth - 16;
   const posTextWidth = ctx.measureText(position).width;
   if (posTextWidth > posMaxWidth) {
-    let start = 0, end = position.length;
+    let start = 0,
+      end = position.length;
     while (start < end) {
       const mid = Math.floor((start + end) / 2);
-      const truncated = position.slice(0, mid) + '...';
+      const truncated = position.slice(0, mid) + "...";
       if (ctx.measureText(truncated).width <= posMaxWidth) {
         start = mid + 1;
       } else {
         end = mid;
       }
     }
-    position = position.slice(0, start - 1) + '...';
+    position = position.slice(0, start - 1) + "...";
   }
-  
+
   ctx.fillText(position, 0, 6);
-  
+
   // Indicadores adicionales sin overhead DOM
   if (node.data.headcount && node.data.headcount.total > 1) {
     ctx.font = `${CHART_CONFIG.smallFontSize - 1}px sans-serif`;
@@ -378,26 +392,30 @@ function renderNode(node, isHovered = false) {
     const headcountText = `(${node.data.headcount.active}/${node.data.headcount.total})`;
     ctx.fillText(headcountText, 0, 14);
   }
-  
+
   // Indicador de expansión/colapso
   if (node._children || node.children) {
     ctx.beginPath();
     ctx.arc(cardWidth / 2 - 6, -cardHeight / 2 + 6, 3, 0, 2 * Math.PI);
-    ctx.fillStyle = node.children ? '#10b981' : '#6b7280';
+    ctx.fillStyle = node.children ? "#10b981" : "#6b7280";
     ctx.fill();
-    
+
     ctx.font = `bold ${CHART_CONFIG.smallFontSize}px sans-serif`;
-    ctx.fillStyle = '#ffffff';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(node.children ? '-' : '+', cardWidth / 2 - 6, -cardHeight / 2 + 6);
+    ctx.fillStyle = "#ffffff";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(
+      node.children ? "-" : "+",
+      cardWidth / 2 - 6,
+      -cardHeight / 2 + 6
+    );
   }
 
   // Indicador gerencial
   if (node.data.isManagerial) {
     ctx.beginPath();
     ctx.arc(-cardWidth / 2 + 6, -cardHeight / 2 + 6, 2, 0, 2 * Math.PI);
-    ctx.fillStyle = '#ffd700';
+    ctx.fillStyle = "#ffd700";
     ctx.fill();
   }
 
@@ -408,6 +426,16 @@ function renderNode(node, isHovered = false) {
  * FUNCIÓN DE RENDER PRINCIPAL
  * Canvas permite renderizar toda la visualización en una pasada sin DOM
  * Esto es infinitamente más rápido que SVG con miles de elementos
+ * 
+ * "Occasionally, we might need to create complex visualizations from large
+datasets, for which the traditional SVG approach can generate performance
+issues. It's important to remember that, for each graphical detail in a data
+visualization, D3 appends one or many SVG elements to the DOM."
+"Canvas is a client-side drawing API that uses script, often JavaScript, to
+create visuals and animations. It doesn’t add XML elements to the DOM,
+which dramatically improve performance when building visualizations from
+large datasets"
+segun D3 in Action, Third Edition de O'reilly
  */
 function render(hoveredNode = null) {
   if (!ctx || !rootGlobal) return;
@@ -421,7 +449,7 @@ function render(hoveredNode = null) {
   renderLinks(links);
 
   // Render de todos los nodos en una sola pasada
-  nodes.forEach(node => {
+  nodes.forEach((node) => {
     renderNode(node, node === hoveredNode);
   });
 
@@ -435,12 +463,14 @@ function render(hoveredNode = null) {
 function updateChart(source, autoZoom = false) {
   const nodes = rootGlobal.descendants();
   const nodeCount = nodes.length;
-  const maxDepth = d3.max(nodes, d => d.depth);
-  
+  const maxDepth = d3.max(nodes, (d) => d.depth);
+
   // Cálculo dinámico de radio basado en cantidad de nodos
   const dynamicRadius = Math.min(
-    CHART_CONFIG.maxRadius, 
-    CHART_CONFIG.baseRadius + (nodeCount * CHART_CONFIG.radiusMultiplier) + (maxDepth * 250)
+    CHART_CONFIG.maxRadius,
+    CHART_CONFIG.baseRadius +
+      nodeCount * CHART_CONFIG.radiusMultiplier +
+      maxDepth * 250
   );
 
   // D3 cluster solo para calcular layout, no para renderizar
@@ -456,7 +486,7 @@ function updateChart(source, autoZoom = false) {
   }
 
   // Preparar datos para animación custom
-  nodes.forEach(d => {
+  nodes.forEach((d) => {
     d.x0 = d.x0 || d.x;
     d.y0 = d.y0 || d.y;
   });
@@ -471,49 +501,49 @@ function updateChart(source, autoZoom = false) {
  */
 function animateNodes(nodes, source) {
   const startTime = performance.now();
-  
+
   function animate(currentTime) {
     const elapsed = currentTime - startTime;
     const progress = Math.min(elapsed / ANIMATION_DURATION, 1);
-    
+
     // Easing personalizado más eficiente que D3
     const easeProgress = 1 - Math.pow(1 - progress, 3);
-    
+
     // Interpolación manual de posiciones
-    nodes.forEach(node => {
+    nodes.forEach((node) => {
       const startX = node.x0;
       const startY = node.y0;
       const endX = node.x;
       const endY = node.y;
-      
+
       node.currentX = startX + (endX - startX) * easeProgress;
       node.currentY = startY + (endY - startY) * easeProgress;
     });
-    
+
     // Actualizar posiciones para render
-    nodes.forEach(node => {
+    nodes.forEach((node) => {
       node.x = node.currentX;
       node.y = node.currentY;
     });
-    
+
     render(); // Re-render con Canvas (súper rápido)
-    
+
     if (progress < 1) {
       animationId = requestAnimationFrame(animate);
     } else {
       // Finalizar animación
-      nodes.forEach(node => {
+      nodes.forEach((node) => {
         node.x0 = node.x;
         node.y0 = node.y;
       });
     }
   }
-  
+
   // Cancelar animación previa para evitar conflictos
   if (animationId) {
     cancelAnimationFrame(animationId);
   }
-  
+
   animationId = requestAnimationFrame(animate);
 }
 
@@ -522,8 +552,10 @@ function animateNodes(nodes, source) {
  */
 function screenToChart(clientX, clientY) {
   const rect = canvas.getBoundingClientRect();
-  const x = (clientX - rect.left - canvas.width / 2 - transform.x) / transform.k;
-  const y = (clientY - rect.top - canvas.height / 2 - transform.y) / transform.k;
+  const x =
+    (clientX - rect.left - canvas.width / 2 - transform.x) / transform.k;
+  const y =
+    (clientY - rect.top - canvas.height / 2 - transform.y) / transform.k;
   return { x, y };
 }
 
@@ -534,11 +566,13 @@ function screenToChart(clientX, clientY) {
 function getNodeAtPosition(x, y) {
   const nodes = rootGlobal.descendants();
   const { cardWidth, cardHeight } = CHART_CONFIG;
-  
-  return nodes.find(node => {
+
+  return nodes.find((node) => {
     const [nodeX, nodeY] = radialPoint(node.x, node.y, node.depth);
-    return Math.abs(x - nodeX) <= cardWidth / 2 && 
-           Math.abs(y - nodeY) <= cardHeight / 2;
+    return (
+      Math.abs(x - nodeX) <= cardWidth / 2 &&
+      Math.abs(y - nodeY) <= cardHeight / 2
+    );
   });
 }
 
@@ -550,7 +584,7 @@ function getNodeAtPosition(x, y) {
 function handleMouseDown(event) {
   isDragging = true;
   lastMousePos = { x: event.clientX, y: event.clientY };
-  canvas.style.cursor = 'grabbing';
+  canvas.style.cursor = "grabbing";
 }
 
 function handleMouseMove(event) {
@@ -558,23 +592,23 @@ function handleMouseMove(event) {
     // Pan manual sin D3 - más directo y rápido
     const dx = event.clientX - lastMousePos.x;
     const dy = event.clientY - lastMousePos.y;
-    
+
     transform.x += dx;
     transform.y += dy;
-    
+
     lastMousePos = { x: event.clientX, y: event.clientY };
     render(); // Re-render inmediato
   } else {
     // Hover detection manual
     const chartCoords = screenToChart(event.clientX, event.clientY);
     const hoveredNode = getNodeAtPosition(chartCoords.x, chartCoords.y);
-    
+
     if (hoveredNode) {
-      canvas.style.cursor = 'pointer';
+      canvas.style.cursor = "pointer";
       showTooltip(event.clientX, event.clientY, hoveredNode.data);
       render(hoveredNode); // Re-render con hover
     } else {
-      canvas.style.cursor = 'grab';
+      canvas.style.cursor = "grab";
       hideTooltip();
       render();
     }
@@ -583,7 +617,7 @@ function handleMouseMove(event) {
 
 function handleMouseUp() {
   isDragging = false;
-  canvas.style.cursor = 'grab';
+  canvas.style.cursor = "grab";
 }
 
 /**
@@ -592,30 +626,31 @@ function handleMouseUp() {
  */
 function handleWheel(event) {
   event.preventDefault();
-  
+
   const rect = canvas.getBoundingClientRect();
   const mouseX = event.clientX - rect.left;
   const mouseY = event.clientY - rect.top;
-  
+
   const scaleFactor = event.deltaY > 0 ? 0.9 : 1.1;
   const newScale = Math.max(0.01, Math.min(100, transform.k * scaleFactor));
-  
+
   // Cálculo de zoom hacia punto del mouse
   const scaleChange = newScale / transform.k;
-  transform.x = mouseX - (mouseX - transform.x) * scaleChange - canvas.width / 2;
-  transform.y = mouseY - (mouseY - transform.y) * scaleChange - canvas.height / 2;
+  transform.x =
+    mouseX - (mouseX - transform.x) * scaleChange - canvas.width / 2;
+  transform.y =
+    mouseY - (mouseY - transform.y) * scaleChange - canvas.height / 2;
   transform.x += canvas.width / 2;
   transform.y += canvas.height / 2;
-  
+
   transform.k = newScale;
   render(); // Re-render inmediato
 }
 
-
 function handleClick(event) {
   const chartCoords = screenToChart(event.clientX, event.clientY);
   const clickedNode = getNodeAtPosition(chartCoords.x, chartCoords.y);
-  
+
   if (clickedNode && (clickedNode.children || clickedNode._children)) {
     // Toggle collapse/expand - solo datos, no DOM
     if (clickedNode.children) {
@@ -639,7 +674,7 @@ function showTooltip(x, y, data) {
     visible: true,
     x: x + 10,
     y: y - 10,
-    data: data
+    data: data,
   };
 }
 
@@ -667,16 +702,16 @@ function resetZoom() {
 function resizeCanvas() {
   const container = canvas.parentElement;
   const rect = container.getBoundingClientRect();
-  
+
   // HiDPI support para pantallas de alta resolución
   const devicePixelRatio = window.devicePixelRatio || 1;
   canvas.width = rect.width * devicePixelRatio;
   canvas.height = rect.height * devicePixelRatio;
-  canvas.style.width = rect.width + 'px';
-  canvas.style.height = rect.height + 'px';
-  
+  canvas.style.width = rect.width + "px";
+  canvas.style.height = rect.height + "px";
+
   ctx.scale(devicePixelRatio, devicePixelRatio);
-  
+
   render();
 }
 
@@ -684,13 +719,16 @@ function resizeCanvas() {
  * Utilidad para variación de color - precalculada cuando sea posible
  */
 function shadeColor(color, percent) {
-  let R = parseInt(color.substring(1,3),16);
-  let G = parseInt(color.substring(3,5),16);
-  let B = parseInt(color.substring(5,7),16);
-  R = Math.min(255, Math.floor(R + (255 - R) * percent / 100));
-  G = Math.min(255, Math.floor(G + (255 - G) * percent / 100));
-  B = Math.min(255, Math.floor(B + (255 - B) * percent / 100));
-  return `#${R.toString(16).padStart(2,'0')}${G.toString(16).padStart(2,'0')}${B.toString(16).padStart(2,'0')}`;
+  let R = parseInt(color.substring(1, 3), 16);
+  let G = parseInt(color.substring(3, 5), 16);
+  let B = parseInt(color.substring(5, 7), 16);
+  R = Math.min(255, Math.floor(R + ((255 - R) * percent) / 100));
+  G = Math.min(255, Math.floor(G + ((255 - G) * percent) / 100));
+  B = Math.min(255, Math.floor(B + ((255 - B) * percent) / 100));
+  return `#${R.toString(16).padStart(2, "0")}${G.toString(16).padStart(
+    2,
+    "0"
+  )}${B.toString(16).padStart(2, "0")}`;
 }
 
 /**
@@ -699,28 +737,28 @@ function shadeColor(color, percent) {
  */
 onMounted(async () => {
   await nextTick();
-  
+
   canvas = canvasRef.value;
-  ctx = canvas.getContext('2d');
-  
+  ctx = canvas.getContext("2d");
+
   // ResizeObserver para performance en resize
   resizeObserver = new ResizeObserver(resizeCanvas);
   resizeObserver.observe(canvas.parentElement);
-  
+
   resizeCanvas();
-  
+
   // D3 solo para estructurar datos iniciales
   const root = buildHierarchy();
   rootGlobal = root;
   root.x0 = Math.PI;
   root.y0 = 0;
-  
+
   // Colapsar nodos inicialmente
   root.children?.forEach(collapse);
-  
+
   updateChart(root, true);
-  
-  canvas.style.cursor = 'grab';
+
+  canvas.style.cursor = "grab";
 });
 
 onUnmounted(() => {
@@ -763,20 +801,19 @@ onUnmounted(() => {
 
 .control-button {
   padding: 10px 20px;
-  background: linear-gradient(135deg, #1D8837 0%, #1D8837 100%);
+  background: linear-gradient(135deg, #1d8837 0%, #1d8837 100%);
   color: white;
   border: none;
   border-radius: 8px;
   font-weight: 600;
   font-size: 14px;
   cursor: pointer;
-  /* CSS TRANSITION - más eficiente que D3 segun el libro */
   transition: all 0.2s ease;
   box-shadow: 0 2px 4px rgba(74, 144, 226, 0.2);
 }
 
 .control-button:hover {
-  background: linear-gradient(135deg, #1D8837 0%, #1D8837 100%);
+  background: linear-gradient(135deg, #1d8837 0%, #1d8837 100%);
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(74, 144, 226, 0.3);
 }
@@ -791,7 +828,7 @@ onUnmounted(() => {
   border-radius: 12px;
   margin: 0;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  background: #E2E1DC;
+  background: #e2e1dc;
   width: 100vw;
   height: 100%;
   display: block;
@@ -802,7 +839,6 @@ onUnmounted(() => {
   position: fixed;
   pointer-events: none;
   z-index: 1000;
-  /* CSS transition más eficiente que D3 transition */
   transition: opacity 0.2s ease;
 }
 
